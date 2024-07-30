@@ -1,0 +1,5 @@
+# Ignore data folder
+data/
+
+# Ignore CSV files from toxic-comment-classification folder
+toxic-comment-classification/*.zip
