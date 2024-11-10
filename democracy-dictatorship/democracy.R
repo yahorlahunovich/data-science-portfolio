@@ -19,6 +19,17 @@ ukraine <- democracy_data[democracy_data$country_name == "Ukraine", ]
 
 df <- democracy_data
 
+dictatorship <- df %>% 
+  filter(regime_category %in% c("Royal dictatorship", "Civilian dictatorship", "Military dictatorship")) %>% 
+  group_by(country_name) %>% 
+  summarise(count = n())
+
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+world_with_count <- world %>%
+  left_join(dictatorship, by = c("name" = "country_name")) %>% 
+  filter(name != "Antarctica")
+
 df <- df %>%
   mutate(country_name = case_when(
     country_name == "Bosnia and Herzegovina" ~ "Bosnia and Herz.",
@@ -41,18 +52,29 @@ df <- df %>%
   ))
 
 
+world_with_count <- world_with_count %>%
+  mutate(
+    count_category = case_when(
+      count == 0 ~ "0",
+      count > 0 & count <= 10 ~ "<10 years",
+      count > 10 & count <= 30 ~ "10-30 years",
+      count > 30 & count <= 50 ~ "30-50 years",
+      count > 50 ~ "50+ years"
+    )
+  )
+
 ggplot(data = world_with_count) +
-  geom_sf(aes(fill = cut(count, breaks = c(0, 10, 30, 50, 70, Inf), include.lowest = TRUE)), color = "white") +
-  scale_fill_manual(
-    values = c("lightgrey", "#FFD700", "#FFA500", "#FF4500", "#8B0000"),
-    labels = c("No data", "Low inequality (<30)", "Moderate inequality (30-40)", "High inequality (41-50)", "Extreme inequality (>50)"),
+  geom_sf(aes(fill = count), color = "white") +
+  scale_fill_gradientn(
+    colors = c("lightgrey", "#FFD700", "#FFA500", "#FF4500", "#8B0000"),
     na.value = "lightgrey",
-    guide = guide_legend(
+    guide = guide_colorbar(
       title = "Years of Dictatorship",
       title.position = "top",
       title.hjust = 0.5,
       direction = "vertical",
-      override.aes = list(size = 6)  # Increases legend square size
+      barwidth = 0.8,
+      barheight = 10
     )
   ) +
   labs(
@@ -63,23 +85,21 @@ ggplot(data = world_with_count) +
   theme_minimal(base_size = 14) +
   theme(
     panel.grid = element_blank(),
-    plot.title = element_text(color = "darkblue", hjust = 0.5, size = 18, face = "bold"),
+    plot.title = element_text(color = "black", hjust = 0.5, size = 29, face = "bold"),
     plot.subtitle = element_text(color = "darkgrey", hjust = 0.5, size = 14, face = "italic"),
     plot.caption = element_text(color = "grey40", face = "italic", size = 10, hjust = 1),
-    legend.position = c(0.2, 0.3),  # Place the legend near South America
+    legend.position = c(0.2, 0.3), 
     legend.title = element_text(face = "bold"),
     legend.text = element_text(size = 10),
-    legend.key.size = unit(0.8, "cm"),  # Size of the legend color squares
-    legend.spacing.y = unit(0.2, "cm"),  # Space between legend items
+    legend.key.size = unit(0.8, "cm"), 
+    legend.spacing.y = unit(0.2, "cm"), 
     axis.text = element_blank(),
     axis.ticks = element_blank(),
     panel.border = element_blank()
   ) +
   coord_sf(crs = "+proj=robin")
-  elections <- df %>% 
-  group_by(country_name, has_free_and_fair_election) %>% 
-  summarise(count = n())
 
+  
 # democracy
 
 democracy <- df %>% 
@@ -88,3 +108,19 @@ democracy <- df %>%
 
 
 # is female monarch
+
+female <- df %>% 
+  mutate(female_monarch = ifelse(is_female_monarch == TRUE, 1, ifelse(
+    is_female_president == TRUE, 1, 0
+  ))) %>% 
+  group_by(country_name, female_monarch) %>% 
+  summarise(count = n())
+f <- df %>% 
+  group_by(country_name, monarch_name, is_female_monarch, is_female_president) %>% 
+  summarise(count = n())
+
+# fair election
+
+elections <- df %>% 
+  group_by(country_name, has_free_and_fair_election) %>% 
+  summarise(count = n())
