@@ -54,11 +54,10 @@ world_with_count <- world_with_count %>%
   mutate(
     count_category = case_when(
       is.na(count) ~ "0 years",
-      count == 0 ~ "0 years",
-      count > 0 & count <= 10 ~ "<10 years",
+      count > 0 & count <= 10 ~ "0-10 years",
       count > 10 & count <= 30 ~ "10-30 years",
       count > 30 & count <= 50 ~ "30-50 years",
-      count > 50 ~ "50+ years"
+      count > 50 ~ "50-70 years"
     )
   )
 
@@ -67,15 +66,15 @@ ggplot(data = world_with_count) +
   labs(
     title = "Global Dictatorship Trends by Country",
     subtitle = "Years of Dictatorship from 1950 to 2020",
-    caption = "Made by Yahor Lahunovich\nData Source: [Add Source]"
+    caption = "Made by Yahor Lahunovich\nData Source: https://xmarquez.github.io/democracyData"
   ) +
   scale_fill_manual(
     values = c(
-      "<10 years" = "#FFD700",
+      "0-10 years" = "#FFD700",
       "0 years" = "lightgrey",
       "10-30 years" = "#FFA500",
-      "30-50 years" = "#FF4500",
-      "50+ years" = "#8B0000"
+      "30-50 years" = "#E74C3C",
+      "50-70 years" = "#8B0000"
     ),
     guide = guide_legend(
       title = "Years of Dictatorship",
@@ -91,7 +90,7 @@ ggplot(data = world_with_count) +
     plot.title = element_text(color = "black", hjust = 0.5, size = 29, face = "bold"),
     plot.subtitle = element_text(color = "darkgrey", hjust = 0.5, size = 14, face = "italic"),
     plot.caption = element_text(color = "grey40", face = "italic", size = 10, hjust = 1),
-    legend.position = c(0.15, 0.35), 
+    legend.position = c(0.1, 0.35), 
     legend.title = element_text(face = "bold"),
     legend.text = element_text(size = 10),
     axis.text = element_blank(),
@@ -99,7 +98,6 @@ ggplot(data = world_with_count) +
     panel.border = element_blank()
   ) +
   coord_sf(crs = "+proj=robin")
-
 
 
 
@@ -112,15 +110,35 @@ democracy <- df %>%
 
 # is female monarch
 
-female <- df %>% 
-  mutate(female_monarch = ifelse(is_female_monarch == TRUE, 1, ifelse(
-    is_female_president == TRUE, 1, 0
-  ))) %>% 
-  group_by(country_name, female_monarch) %>% 
-  summarise(count = n())
 f <- df %>% 
   group_by(country_name, monarch_name, is_female_monarch, is_female_president) %>% 
-  summarise(count = n())
+  summarise(count = n()) %>% 
+  filter(is_female_monarch == TRUE | is_female_president == TRUE) 
+
+female_filtered <- female_filtered %>%
+  mutate(female_leader = ifelse(!is.na(count), "Female Leader", "Other"))
+
+
+ggplot(data = female_filtered) +
+  geom_sf(aes(fill = female_leader), color = "white") +
+  scale_fill_manual(values = c("Female Leader" = "pink", "Other" = "lightgrey")) +
+  labs(
+    title = "Countries with Female Leaders",
+    subtitle = "Presence of Female Monarchs or Presidents from 1950 to 2020",
+    caption = "Made by Yahor Lahunovich\nData Source: https://xmarquez.github.io/democracyData"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid = element_blank(),
+    plot.title = element_text(color = "black", hjust = 0.5, size = 29, face = "bold"),
+    plot.subtitle = element_text(color = "darkgrey", hjust = 0.5, size = 14, face = "italic"),
+    plot.caption = element_text(color = "grey40", face = "italic", size = 10, hjust = 1),
+    legend.position = "none",
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    panel.border = element_blank()
+  ) +
+  coord_sf(crs = "+proj=robin")
 
 # fair election
 
